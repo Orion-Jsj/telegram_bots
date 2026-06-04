@@ -3,7 +3,7 @@
     "batch_size": 100,
     "sleep_between_batches_sec": 2.0,
     "floodwait_cap_sec": 300,
-    "max_messages_per_run": 5000,
+    "max_messages_per_run": 15000,
     "scan_only_limit": 0
   },
   "defaults": {

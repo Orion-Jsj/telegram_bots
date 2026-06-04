@@ -122,7 +122,7 @@ Open the **Login** tab.
 3. If your account has **two-step verification**, you'll be asked for your **2FA
    password**.
 
-After that you're authorized and the session is saved to **`tg.session`**, so you
+After that you're authorized and the session is saved to **`.tg_session`**, so you
 won't have to log in again. The pill in the top-right shows your account when
 connected.
 
@@ -302,11 +302,11 @@ tune behaviour. Restart the app after editing.
 | File | What it is | Sensitive? |
 |---|---|---|
 | `.env` | your API ID / hash / phone | **Yes** — keep private |
-| `tg.session` | your saved Telegram login | **Yes** — anyone with it can act as you |
+| `.tg_session` | your saved Telegram login | **Yes** — anyone with it can act as you |
 | `cleaner.db` | SQLite store: jobs, runs, logs, member snapshots | local only |
 | `config.json` | tunable settings | no |
 
-Keep `.env` and `tg.session` private and never share them.
+Keep `.env` and `.tg_session` private and never share them.
 
 ---
 
@@ -346,5 +346,5 @@ Keep `.env` and `tg.session` private and never share them.
 - **Long runs.** Cleaning years of history across many chats can take a long time
   due to rate limits; the job/run model is designed for exactly this — start small,
   watch the log, and raise `max_messages_per_run` when you're comfortable.
-- **Keep your secrets safe.** `.env` and `tg.session` give full access to your
+- **Keep your secrets safe.** `.env` and `.tg_session` give full access to your
   account. Don't commit or share them.

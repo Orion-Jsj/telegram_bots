@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / ".env"
 CONFIG_PATH = ROOT / "config.json"
-SESSION_PATH = ROOT / "tg.session"          # Telethon session file lives here
+SESSION_PATH = ROOT / ".tg_session"          # Telethon session file lives here
 DB_PATH = ROOT / "cleaner.db"
 
 DEFAULT_CONFIG = {
