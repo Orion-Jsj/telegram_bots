@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Telegram Cleaner</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('tgc-theme');
+        if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">⌬</span>
+      <span class="brand-name">TELEGRAM<span class="dim">·</span>CLEANER</span>
+      <span class="brand-sub">userbot console</span>
+    </div>
+    <div class="modeswitch">
+      <button class="modebtn active" data-mode="clean">🧹 Cleaner</button>
+      <button class="modebtn" data-mode="download">⬇ Downloader</button>
+    </div>
+    <nav class="tabs">
+      <a href="#home"      class="tab" data-tab="home"      data-mode="clean">Home</a>
+      <a href="#create"    class="tab" data-tab="create"    data-mode="clean">Create</a>
+      <a href="#jobs"      class="tab" data-tab="jobs"      data-mode="clean">Jobs</a>
+      <a href="#reports"   class="tab" data-tab="reports"   data-mode="clean">Reports</a>
+      <a href="#browse"    class="tab" data-tab="browse"    data-mode="download">Browse</a>
+      <a href="#downloads" class="tab" data-tab="downloads" data-mode="download">Downloads</a>
+      <a href="#login"     class="tab" data-tab="login"     data-mode="both">Login</a>
+    </nav>
+    <div class="session-pill" id="sessionPill">
+      <span class="dot"></span><span id="sessionText">checking…</span>
+    </div>
+    <button id="themeToggle" class="theme-toggle" title="Toggle light / dark">☀</button>
+  </header>
+
+  <div class="layout">
+    <main class="content">
+
+      <!-- ===================== HOME ===================== -->
+      <section class="panel" data-panel="home">
+        <div class="eyebrow">control room</div>
+        <h1>Clean your groups. Know your members.</h1>
+        <p class="lead">A local Telegram <strong>userbot</strong> console. Pick targets, choose exactly
+        what to remove, preview it with a dry run, then delete on a single confirmation —
+        every action logged and stored for audit. Nothing happens automatically.</p>
+
+        <div id="authBanner" class="notice hidden">
+          You're not logged in yet. Open the <a href="#login" style="color:var(--amber)"><strong>Login</strong></a> tab to connect your account.
+        </div>
+
+        <div class="grid three">
+          <div class="stat"><div class="k">jobs saved</div><div class="v" id="hJobs">0</div></div>
+          <div class="stat"><div class="k">runs executed</div><div class="v" id="hRuns">0</div></div>
+          <div class="stat"><div class="k">messages deleted</div><div class="v" id="hDeleted">0</div></div>
+        </div>
+
+        <div class="spacer"></div>
+        <div class="grid two">
+          <div class="card">
+            <h2>How it flows</h2>
+            <div class="rights-line"><span class="badge">1</span> Log in (code + optional 2FA) — session saved to <code>tg.session</code></div>
+            <div class="rights-line"><span class="badge">2</span> Pick groups / channels / chats and probe your rights</div>
+            <div class="rights-line"><span class="badge">3</span> Choose content types to delete (default: everything protected)</div>
+            <div class="rights-line"><span class="badge">4</span> Dry-run to see exactly what would go</div>
+            <div class="rights-line"><span class="badge">5</span> Run &amp; delete with a single confirmation</div>
+          </div>
+          <div class="card">
+            <h2>What it can delete</h2>
+            <div class="notice safe" style="margin-top:0">
+              <strong>Private chats:</strong> always — your side and the other side (revoke).<br>
+              <strong>Groups where you're owner/admin with delete rights:</strong> everyone's messages.<br>
+              <strong>Everywhere else:</strong> only your own messages.
+            </div>
+            <p class="muted" style="font-size:12px;margin-bottom:0">The Create tab tells you, per target,
+            which right you're missing if a cleanup isn't possible.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== CREATE ===================== -->
+      <section class="panel hidden" data-panel="create">
+        <div class="eyebrow">build a cleanup job</div>
+        <h1>Create job</h1>
+        <p class="lead">Pick targets, set what to remove and who to protect, then save. Jobs never run on
+        their own — trigger a dry run or a confirmed delete from the <a href="#jobs" style="color:var(--amber)">Jobs</a> tab.</p>
+
+        <div class="grid two">
+          <div class="card">
+            <h2>1 · Targets</h2>
+            <div class="subtabs">
+              <div class="subtab active" data-k="groups">Groups</div>
+              <div class="subtab" data-k="channels">Channels</div>
+              <div class="subtab" data-k="dms">Personal chats</div>
+            </div>
+            <div id="chatlist" class="chatlist"><div class="item muted">loading…</div></div>
+            <div class="row-inline" style="margin-top:12px">
+              <button id="btnRefreshChats" class="mini">refresh</button>
+              <span class="muted mono" style="font-size:11px"><span id="selCount">0</span> selected</span>
+              <button id="btnRights" class="btn ghost" style="margin-left:auto">Check my rights</button>
+            </div>
+            <div class="spacer"></div>
+            <div id="rightsBox"></div>
+          </div>
+
+          <div class="card">
+            <h2>2 · What to delete</h2>
+            <div class="notice safe" style="margin-top:0">Default: <strong>everything protected</strong>.
+              Tick a category to opt it IN for deletion.</div>
+            <div id="checks" class="checks"></div>
+
+            <div class="spacer"></div>
+            <h2>3 · When</h2>
+            <div class="field">
+              <label>Delete messages older than (blank = all history)</label>
+              <input id="cutoff" type="date">
+            </div>
+            <div class="field">
+              <label>In personal chats, delete…</label>
+              <select id="dmScope">
+                <option value="both">both sides (mine + theirs)</option>
+                <option value="mine">only my messages</option>
+                <option value="theirs">only the other person's</option>
+              </select>
+            </div>
+
+            <div class="spacer"></div>
+            <h2>4 · Protect</h2>
+            <div class="checks" style="grid-template-columns:1fr 1fr">
+              <label class="chk on"><input id="pPinned" type="checkbox" checked><span class="lbl">Keep pinned</span></label>
+              <label class="chk on"><input id="pSelf" type="checkbox"><span class="lbl">Keep my own messages</span></label>
+              <label class="chk on"><input id="pOwner" type="checkbox" checked><span class="lbl">Keep owner's messages</span></label>
+              <label class="chk on"><input id="pAdmins" type="checkbox" checked><span class="lbl">Keep admins' messages</span></label>
+            </div>
+
+            <div class="spacer"></div>
+            <div class="row-inline" style="justify-content:space-between">
+              <label style="margin:0">Protect specific members</label>
+              <button id="btnLoadMembers" class="mini">load members</button>
+            </div>
+            <div id="memberBox" class="chatlist" style="max-height:220px;margin-top:8px">
+              <div class="item muted">Select a group above, then "load members" to pick who to protect.</div>
+            </div>
+            <div class="field" style="margin-top:10px">
+              <label>…or paste extra user IDs to keep</label>
+              <input id="whitelist" type="text" placeholder="12345678 98765432">
+            </div>
+
+            <div class="spacer"></div>
+            <h2>5 · Save</h2>
+            <label class="chk" style="display:inline-flex;width:auto;margin-bottom:12px">
+              <input id="verbose" type="checkbox"><span class="lbl">Verbose dry-run (log why each message is skipped)</span>
+            </label>
+            <div class="field"><label>Job name</label>
+              <input id="jobName" type="text" placeholder="e.g. purge old media in Dev Group"></div>
+            <button id="btnCreate" class="btn">Create job</button>
+            <span id="createMsg" class="mono" style="margin-left:12px;font-size:12px"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== JOBS ===================== -->
+      <section class="panel hidden" data-panel="jobs">
+        <div class="row-inline" style="justify-content:space-between;align-items:flex-end">
+          <div><div class="eyebrow">saved jobs</div><h1>Jobs</h1></div>
+          <a href="#create" class="btn">+ New job</a>
+        </div>
+        <p class="lead">Reusable cleanup templates. Click a row for the full setup; run a dry preview or a
+        confirmed delete; remove ones you no longer need.</p>
+        <div class="card" style="padding:0">
+          <table>
+            <thead><tr><th>#</th><th>name</th><th>targets</th><th>delete</th><th>cutoff</th>
+              <th>runs</th><th style="text-align:right">actions</th></tr></thead>
+            <tbody id="jobRows"><tr><td colspan="7" class="muted" style="padding:18px">loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== REPORTS ===================== -->
+      <section class="panel hidden" data-panel="reports">
+        <div class="eyebrow">audit &amp; results</div>
+        <h1>Reports</h1>
+        <p class="lead">Every dry and live run, newest first. Click a row for the per-target breakdown.
+        Delete removes the run and its logs from the database.</p>
+        <div class="card" style="padding:0">
+          <table>
+            <thead><tr><th>#</th><th>job</th><th>mode</th><th>status</th><th>scanned</th>
+              <th>matched</th><th>deleted</th><th>when</th><th style="text-align:right">actions</th></tr></thead>
+            <tbody id="runRows"><tr><td colspan="9" class="muted" style="padding:18px">loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== LOGIN ===================== -->
+      <section class="panel hidden" data-panel="login">
+        <div class="eyebrow">authentication</div>
+        <h1>Connect your account</h1>
+        <p class="lead">This logs in as <strong>you</strong> (a userbot), not a bot account. Your
+        <code>api_id</code> / <code>api_hash</code> come from <code>.env</code>; the session is
+        saved to <code>tg.session</code> so you only do this once.</p>
+
+        <div class="card" style="max-width:460px">
+          <div id="stepNoCreds" class="lstep hidden">
+            <div class="notice">No credentials found. Create a <code>.env</code> with
+            <code>API_ID</code>, <code>API_HASH</code>, <code>PHONE</code> from
+            <a href="https://my.telegram.org" target="_blank" style="color:var(--amber)">my.telegram.org</a>, then restart.</div>
+          </div>
+          <div id="stepPhone" class="lstep hidden">
+            <div class="field"><label>Phone number (with country code)</label>
+              <input id="phone" type="text" placeholder="+1 555 123 4567"></div>
+            <button id="btnPhone" class="btn">Send code</button>
+          </div>
+          <div id="stepCode" class="lstep hidden">
+            <div class="field"><label>Login code (sent in your Telegram app)</label>
+              <input id="code" type="text" placeholder="12345" inputmode="numeric"></div>
+            <button id="btnCode" class="btn">Verify</button>
+          </div>
+          <div id="stepPw" class="lstep hidden">
+            <div class="field"><label>2FA password</label>
+              <input id="pw" type="password" placeholder="••••••••"></div>
+            <button id="btnPw" class="btn">Sign in</button>
+          </div>
+          <div id="stepDone" class="lstep hidden">
+            <div class="notice safe" style="margin-top:0">Authorized as <strong id="whoami"></strong>. Session saved.</div>
+            <button id="btnLogout" class="btn ghost">Log out</button>
+          </div>
+          <div id="loginOut" class="mono" style="margin-top:14px;font-size:12px;min-height:18px"></div>
+        </div>
+      </section>
+
+      <!-- ===================== BROWSE (downloader) ===================== -->
+      <section class="panel hidden" data-panel="browse">
+        <div class="eyebrow">download from telegram</div>
+        <h1>Browse files</h1>
+        <p class="lead">Pick a chat, list its files, tick what you want, and download to a folder on
+        this PC. Downloads run one at a time with short pauses and respect Telegram's rate limits,
+        and they can be resumed if interrupted.</p>
+
+        <div class="grid two">
+          <div class="card">
+            <h2>1 · Chat</h2>
+            <div class="subtabs">
+              <div class="subtab active" data-bk="groups">Groups</div>
+              <div class="subtab" data-bk="channels">Channels</div>
+              <div class="subtab" data-bk="dms">Personal</div>
+            </div>
+            <div id="dlChatList" class="chatlist"><div class="item muted">loading…</div></div>
+            <div class="row-inline" style="margin-top:12px">
+              <button id="dlRefreshChats" class="mini">refresh</button>
+              <span class="muted mono" id="dlChosen" style="font-size:11px">none selected</span>
+            </div>
+            <div class="spacer"></div>
+            <h2>2 · File types</h2>
+            <div id="dlTypes" class="checks"></div>
+            <div class="field" style="margin-top:14px">
+              <label>List up to (newest first, per type)</label>
+              <input id="dlLimit" type="text" value="500">
+            </div>
+            <button id="dlList" class="btn">List files</button>
+          </div>
+
+          <div class="card">
+            <div class="row-inline" style="justify-content:space-between">
+              <h2 style="margin:0">3 · Files</h2>
+              <span class="muted mono" id="dlSummary" style="font-size:11px"></span>
+            </div>
+            <div class="row-inline" style="margin:8px 0">
+              <button id="dlAll" class="mini">select all</button>
+              <button id="dlNone" class="mini">none</button>
+            </div>
+            <div id="dlFiles" class="chatlist" style="max-height:340px">
+              <div class="item muted">List files to see them here.</div>
+            </div>
+            <div class="spacer"></div>
+            <h2>4 · Download to</h2>
+            <div class="field"><label>Folder on this PC</label>
+              <input id="dlFolder" type="text" placeholder="loading default…"></div>
+            <button id="dlStart" class="btn safe">Download selected</button>
+            <span id="dlMsg" class="mono" style="margin-left:10px;font-size:12px"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== DOWNLOADS (downloader) ===================== -->
+      <section class="panel hidden" data-panel="downloads">
+        <div class="eyebrow">download jobs</div>
+        <h1>Downloads</h1>
+        <p class="lead">Progress of your downloads. Click a row for per-file detail. A paused
+        download (interrupted, or stopped at a per-run cap) can be resumed from where it left off.</p>
+        <div class="card" style="padding:0">
+          <table>
+            <thead><tr><th>#</th><th>name</th><th>folder</th><th>progress</th><th>status</th>
+              <th>when</th><th style="text-align:right">actions</th></tr></thead>
+            <tbody id="dlRunRows"><tr><td colspan="7" class="muted" style="padding:18px">loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <aside class="lograil">
+      <div class="lograil-head">
+        <span>LIVE LOG</span>
+        <button id="logClear" class="mini">clear</button>
+      </div>
+      <div id="logFeed" class="logfeed"></div>
+    </aside>
+  </div>
+
+  <div id="modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head"><span id="modalTitle">Details</span>
+        <button id="modalClose" class="mini">close</button></div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalFoot" class="modal-foot"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

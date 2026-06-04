@@ -1,0 +1,25 @@
+{
+  "chunking": {
+    "batch_size": 100,
+    "sleep_between_batches_sec": 2.0,
+    "floodwait_cap_sec": 300,
+    "max_messages_per_run": 5000,
+    "scan_only_limit": 0
+  },
+  "defaults": {
+    "protect_admins": true,
+    "protect_pinned": true,
+    "dry_run_default": true
+  },
+  "delete_types": {
+    "text": false,
+    "links": false,
+    "photos": false,
+    "videos": false,
+    "files": false,
+    "voice": false,
+    "stickers": false,
+    "gifs": false,
+    "polls": false
+  }
+}
